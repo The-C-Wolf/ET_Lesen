@@ -1,0 +1,13 @@
+Header;Items;Antworten;richtig;Mehrfachauswahl
+Meta_1;Hast du in den letzten 24h an einer intensiven körperlichen Aktivität teilgenommen?;ja//nein//mäßig;;nein
+Meta_2;Wann hast du das letzte Mal Sport getrieben?;vor über einem Monat//vor über einer Woche//vor einigen Tagen//vorgestern//gestern//heute;;nein
+Meta_3;Als wie gut würdest du deine körperliche Fitness einschätzen?;sehr schlecht//eher schlecht//mittel//eher gut//sehr gut;;nein
+Meta_4;Hast du in den letzten zwei Stunden gegessen?;ja//nein//ein wenig;;nein
+Meta_5;Hast du in den letzten zwei Stunden irgendwelche koffein- oder theinhaltigen Getränke konsumiert?;ja//nein;;nein
+Meta_6;Hast du in den letzten 24 Stunden alkoholische Getränke konsumiert?;ja//nein;;nein
+Meta_7;Rauchst du normalerweise, bzw. regelmäßig?;ja//nein;;nein
+Meta_8;Hast du in den letzten zwei Stunden geraucht?;ja//nein;;nein
+Meta_9;Nimmst du eine Form der oralen Verhütung ein?;ja//nein;;nein
+Meta_10;Hast du irgendwelche bekannten Blutdruckprobleme?;ja//nein;;nein
+Meta_11;Hast du gestern Abend deine übliche Schlafroutine befolgt?;ja//nein;;nein
+Meta_12;Leidest du an einer Atemwegserkrankung?;ja//nein;;nein

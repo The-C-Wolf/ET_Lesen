@@ -12,9 +12,9 @@ import os
 PATH = os.path.dirname(os.path.abspath(__file__)) #gets source file location
 
 class MultipleChoice:
-    def __init__(self, win, mouse, df, titel=""):
+    def __init__(self, win, mouse, df, titel="",startpos=(-400,400), button_pos=(500,-450),dist_param=110):
         textsize = 20
-        button_pos = (500,-450) #fullscreen false: (400,-300)
+        #button_pos = (500,-450) #fullscreen false: (400,-300)
         self.button = [visual.Rect(win, units = "pix",width = 80, height = 40, pos = button_pos, lineColor="black", fillColor = [0.5,0.5,0.5]),visual.TextStim(win, units = "pix", text = "Weiter", height = 20, color=(-1,-1,-1), pos=button_pos)]
         self.win = win
         self.mouse = mouse
@@ -27,12 +27,12 @@ class MultipleChoice:
         for answer in self.answers:
             self.answ_list.append(answer.split('//'))
         self.mult_answ = df.loc[0:(self.itemzahl-1),"Mehrfachauswahl"]
-        x_start = -400
-        y_start = 400
+        x_start = startpos[0]
+        y_start = startpos[1]
         box_size = 15
         box_dist = box_size + 125 #not real box dist!
-        item_dist = box_size + 110 #not real dist
-        x_scale_dist = 500
+        item_dist = box_size + dist_param #not real dist
+        #x_scale_dist = 500
         self.box = list() #going to be the list with rect objects for clicking the answers
         self.answer = list() #going to be the list of objects with answer options
         self.text = list() #going to be the list of objects with itemtexts
@@ -92,7 +92,7 @@ class MultipleChoice:
                     break
             if event.getKeys(['escape']):
                 quittext = "Willst du das Experiment wirklich beenden? Drücke: \n\n W Für Weiter \n\n B Für Beenden"
-                quit_text = visual.TextStim(self.win, units = 'pix', height = 22, text=quittext.decode("utf-8"), alignHoriz = 'center', font="Courier New",  wrapWidth = 1100, color=(-1,-1,-1), pos = (0,0))
+                quit_text = visual.TextStim(self.win, units = 'pix', height = 22, text=quittext , alignHoriz = 'center', font="Courier New",  wrapWidth = 1100, color=(-1,-1,-1), pos = (0,0))
                 event.clearEvents()
                 while True:
                     quit_text.draw()

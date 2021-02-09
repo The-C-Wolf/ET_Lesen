@@ -10,8 +10,8 @@ Changed on Fri Mar 29 13:38:18 2019
 """
 
 
-ET          = 1
-FULLSCREEN  = 0
+ET          = 0
+FULLSCREEN  = 1
 
 ########################################
 from psychopy import visual, core, event
