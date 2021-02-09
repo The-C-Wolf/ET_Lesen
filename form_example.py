@@ -4,6 +4,7 @@ Created on Mo Feb 09 10:23:05 2021
 
 @author: Wolf Culemann
 """
+
 import os
 import sys
 import pandas as pd
@@ -19,6 +20,8 @@ screen_height = GetSystemMetrics(1)
 FULLSCREEN = 0
 DEBUG = 1
 
+EXP_TITLE = "Lesen"
+
 QUEST_PATH = "./questionnaires/"
 RES_PATH = "./Results/"
 
@@ -26,7 +29,7 @@ RES_PATH = "./Results/"
 
 def showGui():
     guidict = dict()
-    myDlg = gui.Dlg(title="Experiment zu sozialen Prozessen")
+    myDlg = gui.Dlg(title=EXP_TITLE)
     myDlg.addText('Probandeninfo')
     myDlg.addText('Bitte alle Felder ausfüllen!')
     myDlg.addField('Generierter Zuordnungscode:')
