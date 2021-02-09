@@ -4,11 +4,12 @@ Created on Mo Feb 09 10:23:05 2021
 
 @author: Wolf Culemann
 """
+import os
 import sys
 import pandas as pd
 from psychopy import visual, core, event, gui
-from likertskala import LikertSkala
-from multiplechoice import MultipleChoice
+from local_modules.likertskala import LikertSkala
+from local_modules.multiplechoice import MultipleChoice
 from win32api import GetSystemMetrics
 
 screen_width = GetSystemMetrics(0)
@@ -17,6 +18,9 @@ screen_height = GetSystemMetrics(1)
 
 FULLSCREEN = 0
 DEBUG = 1
+
+QUEST_PATH = "./questionnaires/"
+RES_PATH = "./Results/"
 
 
 
@@ -58,7 +62,7 @@ def split_quest(fpath, last_item):
     elif fpath.endswith(".xlsx"):
         df = pd.read_excel(fpath)
     else:
-        raise AttributeError
+        raise Exception("no valid filetype - .csv or .xlsx expected")
     df = df.sample(frac=1)
     df = df.reset_index()
     df1 = df.loc[0:last_item,:]
@@ -72,12 +76,15 @@ def split_quest(fpath, last_item):
 
 
 def main():
-
+    
+    #create window and mouse objects
     win = visual.Window(fullscr=FULLSCREEN, size= [screen_width,screen_height], color='white', units='pix',winType='pyglet',gammaErrorPolicy="warn") 
     mouse = event.Mouse(visible=True)
     
-    vp_data = pd.DataFrame([])  #dataframe to store vp data
-    #show gui
+    #dataframe to store vp data
+    vp_data = pd.DataFrame([])
+    
+    #minimze window and show gui
     win.winHandle.set_fullscreen(False)
     win.winHandle.minimize()
     vp_info = showGui()
@@ -87,8 +94,8 @@ def main():
     win.winHandle.maximize()
     
     #load questionnaires
-    dfs_meta = split_quest("Meta.xlsx",last_item = 7)
-    dfs_sgse = split_quest("SGSE_BFI.xlsx",last_item = 9)
+    dfs_meta = split_quest(os.path.join(QUEST_PATH,"Meta.xlsx"),last_item = 6)
+    dfs_sgse = split_quest(os.path.join(QUEST_PATH,"SGSE_BFI.xlsx"),last_item = 9)
     
     #init questionnaires
     sgse1 = LikertSkala(win, mouse, dfs_sgse[0],button_pos=(400,-400))
@@ -102,23 +109,19 @@ def main():
     df_res_meta2 = meta2.draw("Meta2")
     vp_data = pd.concat([vp_data,df_res_meta2],axis=1)
     
-    
+    #append questionnaire data to vp_code gui data
     df_res_sgse1 = sgse1.draw("SGSE1")
     vp_data = pd.concat([vp_data,df_res_sgse1],axis=1)
     df_res_sgse2 = sgse2.draw("SGSE2")
     vp_data = pd.concat([vp_data,df_res_sgse2],axis=1)
-    vp_data.to_csv("results.csv")
+    
+    #save data
+    vp_data.to_csv(os.path.join(RES_PATH,"results.csv"))
+    
+    
     win.close()
     sys.exit()
-#    df_leseverh = pd.read_csv("./Leseverhalten.csv", sep=";",encoding="utf-8") #Input File
-#    mc_leseverh = MultipleChoice(win, mouse, df_leseverh, ["Ein Titel"])
-#    #-------Leseverhalten
-#    mouse.setVisible(1)
-#    df = mc_leseverh.draw("sand")
-#    df.to_csv("result.csv",encoding="utf-8")
-#    mouse.setVisible(0)
-#    win.flip()    
-#    df_leseerl = pd.read_csv("./Leseerleben_Sandmann_NEU.csv", sep=";", encoding="utf-8") #Input File
+
 
 if __name__ == "__main__":
     main()
