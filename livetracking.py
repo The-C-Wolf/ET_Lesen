@@ -601,7 +601,7 @@ def main():
     
     
     #create experiment instance
-    exp = Reading(
+    exp = Experiment(
             et = et,
             ec = ec,
             win = win,
