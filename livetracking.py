@@ -30,21 +30,133 @@ elif param.ET == "SMI":
     from smi.iViewXAPI import  *
 
 
+def show_gui():
+ 
+    """show GUI for User Input before actual Exp starts"""
+ 
+    guidict = dict()
+    myDlg = gui.Dlg(title=param.EXP_TITLE)
+    myDlg.addText('Probandeninfo')
+    myDlg.addText('Bitte alle Felder ausfüllen!')
+    myDlg.addField('Generierter Zuordnungscode:')
+    myDlg.addField('Erster Buchstabe des Vornamens der Mutter:')
+    myDlg.addField('Zweiter Buchstabe des Vornamens des Vaters:')
+    myDlg.addField('Dritter Buchstabe des Familiennamens:')
+    myDlg.addField('Vierter Buchstabe des Geburtsortes:')
+    myDlg.addField('Monat des Geburtsdatums:',choices=["","01","02","03","04","05","06","07","08","09","10","11","12"])
+    myDlg.addField('Alter:',choices=["","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33",
+                                        "34","35","36","37","38","39","40","41","42","43","44",">44"])
+    myDlg.addField('Geschlecht:',choices=["","weiblich","männlich","anderes"])
+    myDlg.addField('Brille:',choices=["","nein","ja","Kontaktlinsen"])
+    myDlg.addField('Muttersprache:',choices=["","Deutsch","Deutsch + Andere","andere"])
+    myDlg.addField('Studiengang:')
+    ok_data = myDlg.show()  # show dialog and wait for OK or Cancel
+    if myDlg.OK:
+        guidict["vp_code"]= ok_data[1]+ok_data[2]+ok_data[3]+ok_data[4]+ok_data[5]
+        guidict["age"] = ok_data[6]
+        guidict["sex"] = ok_data[7]
+        guidict["glass"] = ok_data[8]
+        guidict["lang"] = ok_data[9]
+        guidict["course"] = ok_data[10]
+    else:
+        print('user cancelled')
+        core.quit()
+    return guidict#pd.DataFrame([guidict])
 
+class Trial(object):
+    """ 
+    A Trial is a single unit in an experiment...
+    """
+    def __init__(self, win, userquit = None, enable_escape = True):
+        self._win = win
+        self._start_time = 0
+        self._duration = 0
+        self._clock = core.Clock()
+        self._userquit = userquit
+        self._enable_escape = enable_escape
+    
+    @property
+    def duration(self):
+        return self._duration
+    
+    @duration.setter
+    def duration(self, dur):
+        self._duration = dur #end_time - start_time
+    
+    @property
+    def start_time(self):
+        return self._start_time
+    
+    @start_time.setter
+    def start_time(self, val):
+        self._start_time = val
+    
+    
+class Instruction(Trial):
+    """An instruction consists of an image, that is presented
+    in fullscreen mode and can be ended on an event
+    """
+    def __init__(self, fpath, keys_next, t_min):
+        super(Instruction,self).__init__()
+        self.fpath = fpath
+        self.keys_next = keys_next
+        self.t_min = t_min
+        self._image = None
+        self.running_time = 0
+        
+    @property
+    def image(self):
+        return self._image
+    
+    @image.setter
+    def image(self):
+        self._image = visual.ImageStim(self.win, self.fpath)
+    
+    def draw(self):
+        self.start_time = self._clock.getTime()
+        
+        while True:
+            pressed_keys = event.getKeys(keyList = self.keys_next.append('escape'))
+            self.running_time = self._clock.getTime() - self.start_time
+                    
+            if self.running_time > self.t_min:
+                
+                if any([el for el in pressed_keys if el in self.keys_next]):
+                    self.duration = self._clock.getTime() - self.start_time
+                    break
+            else:      
+                self.image.draw()
+                self._win.flip()
+                event.clearEvents()
+            
+            if self._enable_escape:
+                if 'escape' in pressed_keys:
+                    self._userquit.check()
+            
+
+class Questionnaire(Trial):
+    """
+    A LikertSkala or MultipleChoice
+    """
+    def __init__(self, fpath):
+        super(Questionnaire,self).__init__()
 
     
 class Experiment(object):
     # --- log ---
     sep = ';'
-    header = ('sid', 'age', 'sex', 'lang', 'glass','trial', 'exptime','trackertime', 'item') 
+    header = ('sid', 'age', 'sex', 'lang', 'glass','trial',
+              'exptime','trackertime', 'item') 
               
-    def __init__(self, win=None, mouse=None,et=None,ec = None, et_fname=None, sess=None,
-                 fname_log=None, expclock=core.Clock(), vp_code = "999"):
+    def __init__(self, win=None, mouse=None,et=None,ec = None,
+                 et_fname=None, sess=None, fname_log=None, 
+                 expclock=core.Clock(), vp_code = "999"):
         self.win = win
         self.mouse = mouse
         self.et = et
         self.ec = ec
-        self.edf_name = edf_name
+        #self.edf_name = edf_name
+        self.et_fname = et_fname
         self.sess = sess
         self.vp_code = vp_code
         self.expclock = expclock  
@@ -55,38 +167,6 @@ class Experiment(object):
         
         self.quests = dict()
         
-    def show_gui(self):
-        
-        """show GUI for User Input before actual Exp starts"""
-        
-        guidict = dict()
-        myDlg = gui.Dlg(title=param.EXP_TITLE)
-        myDlg.addText('Probandeninfo')
-        myDlg.addText('Bitte alle Felder ausfüllen!')
-        myDlg.addField('Generierter Zuordnungscode:')
-        myDlg.addField('Erster Buchstabe des Vornamens der Mutter:')
-        myDlg.addField('Zweiter Buchstabe des Vornamens des Vaters:')
-        myDlg.addField('Dritter Buchstabe des Familiennamens:')
-        myDlg.addField('Vierter Buchstabe des Geburtsortes:')
-        myDlg.addField('Monat des Geburtsdatums:',choices=["","01","02","03","04","05","06","07","08","09","10","11","12"])
-        myDlg.addField('Alter:',choices=["","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33",
-                                         "34","35","36","37","38","39","40","41","42","43","44",">44"])
-        myDlg.addField('Geschlecht:',choices=["","weiblich","männlich","anderes"])
-        myDlg.addField('Brille:',choices=["","nein","ja","Kontaktlinsen"])
-        myDlg.addField('Muttersprache:',choices=["","Deutsch","Deutsch + Andere","andere"])
-        myDlg.addField('Studiengang:')
-        ok_data = myDlg.show()  # show dialog and wait for OK or Cancel
-        if myDlg.OK:
-            guidict["vp_code"]= ok_data[1]+ok_data[2]+ok_data[3]+ok_data[4]+ok_data[5]
-            guidict["age"] = ok_data[6]
-            guidict["sex"] = ok_data[7]
-            guidict["glass"] = ok_data[8]
-            guidict["lang"] = ok_data[9]
-            guidict["course"] = ok_data[10]
-        else:
-            print('user cancelled')
-            core.quit()
-        return pd.DataFrame([guidict])
     
     def show_instruction(self,pic=None):
         
@@ -489,14 +569,18 @@ def main():
     if len(spath) !=0: os.chdir(spath)
     
     #show gui and get data
-    vp_data = showGui()
-    
+    vp_data = show_gui()
+    #create window and mouse objects
+    win = visual.Window(fullscr=FULLSCREEN, size= [screen_width,screen_height], color='white', units='pix',winType='pyglet',gammaErrorPolicy="warn") 
+    mouse = event.Mouse(visible=True)
  
     if param.ET == "Eyelink":
         #set EDF name
         et_fname = vp_data["vp_code"] + ".EDF"
         #init eyetracker
-        ec = EyelinkCommunication(address=param.TRACKER, edf_name=edf_name, screen_width=param.SCREEN_WIDTH,screen_height=param.SCREEN_HEIGHT, win=win)    
+        ec = EyelinkCommunication(address=param.TRACKER, et_fname=et_fname,
+                                  screen_width=param.SCREEN_WIDTH,screen_height=param.SCREEN_HEIGHT,
+                                  win=win)    
         et = ec.trackerSetup() #eyelinkcommunication
         ec.sendInitCommands() #send initial commands and set edf file contents
         if(et.isConnected() and not et.breakPressed()):
@@ -515,10 +599,6 @@ def main():
         et = None
         ec = None
     
-    
-    #create window and mouse objects
-    win = visual.Window(fullscr=FULLSCREEN, size= [screen_width,screen_height], color='white', units='pix',winType='pyglet',gammaErrorPolicy="warn") 
-    mouse = event.Mouse(visible=True)
     
     #create experiment instance
     exp = Reading(
