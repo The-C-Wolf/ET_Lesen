@@ -521,7 +521,7 @@ def main():
     mouse = event.Mouse(visible=True)
     
     #create experiment instance
-    exp = Reading(
+    exp = Experiment(
             et = et,
             ec = ec,
             win = win,
