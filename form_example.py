@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mo Feb 09 10:23:05 2021
+Created on Mon Feb 09 10:23:05 2021
 
 @author: Wolf Culemann
 """
@@ -58,7 +58,7 @@ def showGui():
     return guidict
 
 
-def split_quest(fpath, last_item):
+def split_quest(fpath, last_item, shuffle=True):
     #questionnaire input
     if fpath.endswith(".csv"):
         df = pd.read_csv(fpath, sep=";")
@@ -66,7 +66,8 @@ def split_quest(fpath, last_item):
         df = pd.read_excel(fpath)
     else:
         raise Exception("no valid filetype - .csv or .xlsx expected")
-    df = df.sample(frac=1)
+    if shuffle:
+        df = df.sample(frac=1)
     df = df.reset_index()
     df1 = df.loc[0:last_item,:]
     df1 = df1.reset_index()
