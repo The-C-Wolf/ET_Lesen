@@ -18,6 +18,8 @@ FULLSCREEN = True
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 1024
 
+MOUSE_BUTTONS = {"left_click":[1,0,0],"right_click":[0,0,1],"wheel_click":[0,1,0]}
+
 #wenn MAX_FIX überschritten wird nachgefragt, nach Formel: MAX_FIX = dur_factor_mean*MEAN + dur_factor_sd*SD
 dur_factor_mean = 2
 dur_factor_sd = 2

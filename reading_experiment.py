@@ -71,9 +71,11 @@ class Trial(object):
     A Trial is a single unit in an experiment...
     
     e.g.
-    keys_ans = {"right": "next", "left": "previous", "escape": "userquit"}
+    event_dict = {"keyboard":{"space","ask_mw","right": "next", "left": "previous", "escape": "userquit"},
+                    "mouse": {"left_click": "previous","right_click":"next"},
+                    "et": {"some_thresh": "ask_mw"}}
     """
-    def __init__(self, win, keys_ans, exp_clock, content, userquit, mouse = None):
+    def __init__(self, win, event_dict, exp_clock, content, userquit, mouse = None):
         
         self._win = win
         self._mouse = mouse
@@ -85,7 +87,7 @@ class Trial(object):
         
         self._content = content #list of objects to draw
         self._userquit = userquit
-        self._keys_ans = keys_ans
+        self._event_dict = event_dict
         
     
     @property
@@ -122,20 +124,76 @@ class Trial(object):
         self.start_time = self._exp_clock.getTime()
         
         while True:
-            pressed_keys = event.getKeys(keyList = self._keys_ans)
             self.duration = self._exp_clock.getTime() - self.start_time
-                    
+            
             if self.duration > self.t_min:
                 
-                if any([el for el in pressed_keys if el in self._keys_ans]):
-                    break
+                if "keyboard" in self._event_dict:
+                    pressed_keys = event.getKeys(keyList = self._event_dict["keyboard"])
+                    if any([el for el in pressed_keys if el in self._event_dict["keyboard"]]):
+                        return self._event_dict["keyboard"][pressed_keys[0]]
+                
+                if "mouse" in self._event_dict:
+                    button = self._mouse.getPressed()
+                    clickable = {name:param.MOUSE_BUTTONS[click] for name, click in self._event_dict["mouse"].items()}
+                    for name, but in clickable:
+                        if button == but:
+                            return self._event_dict["mouse"][name]
+               
             else:      
                 self.draw_content()
-            
-            if self._enable_escape:
-                if 'escape' in pressed_keys:
-                    self._userquit.check()
+
+class Calibration(object):
     
+    def __init__(self, win, et, eye = "both", accuracy = 0.5, to_draw=None, userquit=None):
+        super(Calibration,self).__init__()
+        self.win = win
+        self.et = et
+        self.to_draw = to_draw
+        self.accuracy = accuracy
+        self.eye = eye #both, mean, one, l, r
+        
+    def run(self):   
+        ac = 0.5
+        if self.to_draw:
+            for item in self.to_draw:
+                #item.setImage(os.path.join(param.fpath_instructions, img))
+                item.draw()
+                self.win.flip()
+                #core.wait(0.2)
+            self.waitFixClick(mouse=mouse, button=[1,0,0], toDraw=toDraw, userquit=userquit, et=et, time=1,fixpos=[screen_width,screen_height/2], xdist=100, ydist=screen_height/2)
+    
+        white = visual.ImageStim(win, image=os.path.join(param.fpath_instructions, "whitescreen.png"), pos=(0.0, 0.0), units='pix')
+        win.winHandle.set_fullscreen(False)
+        win.winHandle.maximize()
+        white.draw()
+        win.flip()
+        while True:
+            dummy, calib_info, full_info = et.calibrate()
+            cal_res = dict(calib_info)
+            cal_full = dict(full_info)
+            if float(cal_res["X:"])<=ac and float(cal_res["Y:"])<=ac:
+                print("Calibrated"+str(cal_res))
+                if ac ==0.5:
+                    et.write('MSG:Calibrated_05:{0}'.format(cal_res))
+                    et.write('MSG:Calibrated_05:{0}'.format(cal_full))
+                else:
+                    et.write('MSG:Calibrated_07:{0}'.format(cal_res))
+                    et.write('MSG:Calibrated_07:{0}'.format(cal_full))
+                break
+            else:
+                fail = visual.ImageStim(win, image=os.path.join(param.fpath_instructions, "calibration_fail.png"), pos=(0.0, 0.0), units='pix')
+                self.waitFixClick(mouse=mouse, button=[1,0,0], toDraw=[fail], userquit=userquit, et=et, time=1,fixpos=[screen_width,screen_height/2], xdist=100, ydist=screen_height/2)
+                ac=0.7
+                et.write('MSG:Failed_Calibration_with:{0}'.format(cal_res))
+                et.write('MSG:Failed_Calibration_with:{0}'.format(cal_full))
+                print("Failed With"+str(cal_res))
+                white.draw()
+                win.flip()
+        #white.draw()
+        win.winHandle.set_fullscreen(True)
+        event.clearEvents()
+        return cal_res 
 class Instruction(Trial):
     """An instruction consists of an image, that is presented
     in fullscreen mode and can be ended on an event
@@ -190,8 +248,8 @@ class PageReading(Trial):
         return self._text_image
     
     @text_image.setter
-    def text_image(self):
-        self._text_image = visual.ImageStim(self.win, self.fpath_image)
+    def text_image(self, img):
+        self._text_image = img #visual.ImageStim(self.win, self.fpath_image)
         
         
 class MindWanderProbe(Trial):
