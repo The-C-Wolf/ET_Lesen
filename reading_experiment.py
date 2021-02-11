@@ -43,9 +43,11 @@ def show_gui():
     myDlg.addField('Zweiter Buchstabe des Vornamens des Vaters:')
     myDlg.addField('Dritter Buchstabe des Familiennamens:')
     myDlg.addField('Vierter Buchstabe des Geburtsortes:')
-    myDlg.addField('Monat des Geburtsdatums:',choices=["","01","02","03","04","05","06","07","08","09","10","11","12"])
-    myDlg.addField('Alter:',choices=["","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33",
-                                        "34","35","36","37","38","39","40","41","42","43","44",">44"])
+    myDlg.addField('Monat des Geburtsdatums:',
+                   choices=["","01","02","03","04","05","06","07","08","09","10","11","12"])
+    myDlg.addField('Alter:',
+                   choices=["","18","19","20","21","22","23","24","25","26","27","28","29","30",
+                            "31","32","33","34","35","36","37","38","39","40","41","42","43","44",">44"])
     myDlg.addField('Geschlecht:',choices=["","weiblich","männlich","anderes"])
     myDlg.addField('Brille:',choices=["","nein","ja","Kontaktlinsen"])
     myDlg.addField('Muttersprache:',choices=["","Deutsch","Deutsch + Andere","andere"])
@@ -61,19 +63,30 @@ def show_gui():
     else:
         print('user cancelled')
         core.quit()
-    return guidict#pd.DataFrame([guidict])
+    return guidict
+
 
 class Trial(object):
     """ 
     A Trial is a single unit in an experiment...
+    
+    e.g.
+    keys_ans = {"right": "next", "left": "previous", "escape": "userquit"}
     """
-    def __init__(self, win, userquit = None, enable_escape = True):
+    def __init__(self, win, keys_ans, exp_clock, content, userquit, mouse = None):
+        
         self._win = win
+        self._mouse = mouse
+        
+        self._exp_clock = exp_clock
         self._start_time = 0
+        self._end_time = 0
         self._duration = 0
-        self._clock = core.Clock()
+        
+        self._content = content #list of objects to draw
         self._userquit = userquit
-        self._enable_escape = enable_escape
+        self._keys_ans = keys_ans
+        
     
     @property
     def duration(self):
@@ -90,7 +103,38 @@ class Trial(object):
     @start_time.setter
     def start_time(self, val):
         self._start_time = val
+        
+    @property
+    def end_time(self):
+        return self._end_time
     
+    @end_time.setter
+    def end_time(self, val):
+        self._end_time = val
+    
+    def draw_content(self):
+        for content in self._content:
+            content.draw()
+        self._win.flip()
+        event.clearEvents()
+    
+    def run(self):
+        self.start_time = self._exp_clock.getTime()
+        
+        while True:
+            pressed_keys = event.getKeys(keyList = self._keys_ans)
+            self.duration = self._exp_clock.getTime() - self.start_time
+                    
+            if self.duration > self.t_min:
+                
+                if any([el for el in pressed_keys if el in self._keys_ans]):
+                    break
+            else:      
+                self.draw_content()
+            
+            if self._enable_escape:
+                if 'escape' in pressed_keys:
+                    self._userquit.check()
     
 class Instruction(Trial):
     """An instruction consists of an image, that is presented
@@ -112,17 +156,17 @@ class Instruction(Trial):
     def image(self):
         self._image = visual.ImageStim(self.win, self.fpath)
     
-    def draw(self):
-        self.start_time = self._clock.getTime()
+    def run(self):
+        self.start_time = self._exp_clock.getTime()
         
         while True:
             pressed_keys = event.getKeys(keyList = self.keys_next.append('escape'))
-            self.running_time = self._clock.getTime() - self.start_time
+            self.running_time = self._exp_clock.getTime() - self.start_time
                     
             if self.running_time > self.t_min:
                 
                 if any([el for el in pressed_keys if el in self.keys_next]):
-                    self.duration = self._clock.getTime() - self.start_time
+                    self.duration = self._exp_clock.getTime() - self.start_time
                     break
             else:      
                 self.image.draw()
@@ -132,7 +176,121 @@ class Instruction(Trial):
             if self._enable_escape:
                 if 'escape' in pressed_keys:
                     self._userquit.check()
+
+class PageReading(Trial):
+    def __init__(self, win, fpath_image, t_min = 0,
+                 keys_ans = {"right":"next","left":"previous","space":"instance_of_mind_wander_probe"}):
+        super(PageReading, self).__init__()
+        self.win = win
+        self.fpath_image = fpath_image
+        
+        
+    @property
+    def text_image(self):
+        return self._text_image
+    
+    @text_image.setter
+    def text_image(self):
+        self._text_image = visual.ImageStim(self.win, self.fpath_image)
+        
+        
+class MindWanderProbe(Trial):
+    """This probe consists of the blurred version of the text image, 
+    presented in fullscreen mode and an overlay of MW question
+    """
+    def __init__(self, win, fpath_blurred, fpath_overlay, text_quest, t_min = 0,
+                 keys_ans = {"1":"text","2":"other","3":"nothing"}):
+        super(Instruction,self).__init__()
+        self.win = win
+        self.fpath_blurred = fpath_blurred
+        self.overlay = visual.ImageStim(self.win, fpath_overlay)
+        self.text = visual.TextStim(win = self.win, text = text_quest,
+                                    color = "black", font = "RobotoMono-Regular.ttf")
+        self.keys_ans = keys_ans
+        self.t_min = t_min
+        self._bg_image = None
+        self.running_time = 0
+        
+    @property
+    def bg_image(self):
+        return self._bg_image
+    
+    @bg_image.setter
+    def bg_image(self):
+        self._bg_image = visual.ImageStim(self.win, self.fpath_blurred)
+    
+    def run(self):
+        self.start_time = self._exp_clock.getTime()
+        
+        while True:
+            pressed_keys = event.getKeys(keyList = self.keys_ans.append('escape'))
+            self.running_time = self._exp_clock.getTime() - self.start_time
+                    
+            if self.running_time > self.t_min:
+                match_list = [el for el in pressed_keys if el in self.keys_ans]
+                if len(match_list) > 0:
+                    self.duration = self._exp_clock.getTime() - self.start_time
+                    #first matching key is the answer
+                    answer = self.keys_ans[match_list[0]] 
+                    return answer
+            else:      
+                self.bg_image.draw()
+                self.overlay.draw()
+                self.text.draw()
+                self._win.flip()
+                event.clearEvents()
             
+            if self._enable_escape:
+                if 'escape' in pressed_keys:
+                    ret = self._userquit.check()
+                    if ret == "Quit":
+                        return ret
+
+
+class Block(object):
+    """
+    groups multiple Trials or Blocks
+    """
+    def __init__(self, name, contains, exp_clock):
+        super(Block,self).__init__()
+        self._name = name
+        self._contains = contains
+        self._n_max = len(contains)
+        self._current_trial_no = None
+        self._current_trial = None
+        self._exp_clock = exp_clock
+        self._start_time = 0
+        self._end_time = 0
+        self._duration = 0
+        
+    @property
+    def duration(self):
+        return self._duration
+    
+    @duration.setter
+    def duration(self, dur):
+        self._duration = dur #end_time - start_time
+        
+    def run(self):
+        self._current_trial_no = 0
+        self._start_time = self._exp_clock.getTime()
+        while True:
+            self._current_trial = self._contains[self._current_trial_no]
+            ret = self._current_trial.run()
+            if ret == "next":
+                if self._current_trial_no+1 == self._n_max:
+                    self._end_time = self._exp_clock.getTime()
+                    self.duration = self._end_time - self._start_time
+                    return "end"
+                self._current_trial_no += 1
+            elif ret == "previous":
+                if self._current_trial_no == 0:
+                    print("no previous entry!!! continue...")
+                self._current_trial_no -= 1
+            elif ret == "Quit":
+                return ret
+
+        
 
 class Questionnaire(Trial):
     """
@@ -269,6 +427,8 @@ class Experiment(object):
         DURATION = max_dur
         t_fix = []
         gaze = 0
+        
+        ######################
         et.setOfflineMode()
         msecDelay(50)
         error = et.startRecording(1,1,1,1) #1,1,0,1 -- 0 means send events only through link
@@ -303,6 +463,8 @@ class Experiment(object):
             return TRIAL_ERROR
         
         et.flushKeybuttons(0)
+        
+        ####################################
         img.setImage(param.fpath_stimuli+slide)
         img.draw()
         self.win.flip()
@@ -368,6 +530,8 @@ class Experiment(object):
         pupil_timer = core.Clock()
         mw_delay_timer = core.Clock()
         gaze = 0
+        
+        #############
         et.setOfflineMode()
         msecDelay(50)
         error = et.startRecording(1,1,1,1) #1,1,0,1 -- 0 means send events only through link
@@ -402,6 +566,8 @@ class Experiment(object):
             return TRIAL_ERROR
         
         et.flushKeybuttons(0)
+        ###################
+        
         if slide in param.ask_random:
             mw_random = True
         else:
