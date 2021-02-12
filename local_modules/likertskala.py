@@ -76,7 +76,8 @@ class LikertSkala:
         self.rating = list()
         self.instruction = visual.TextStim(win, units = "pix", text = instruction , height = textsize, wrapWidth = 1000, color=instruction_color, bold=True, pos=instruction_pos, alignHoriz = "left")
         #self.scaletext = visual.TextStim(win, units = "pix", text = scaletext, height = scaletext_height, ori=scaletext_ori, color=(-1,-1,-1),bold=True, pos=scaletext_pos)
-        self.button = [visual.Rect(win, units = "pix",width = button_size[0], height = button_size[1], pos = button_pos, lineColor="black", fillColor = [0.5,0.5,0.5]),visual.TextStim(win, units = "pix", text = "Weiter", height = 20, color=(-1,-1,-1),bold=True, pos=button_pos)]
+        self.button = [visual.Rect(win, units = "pix",width = button_size[0], height = button_size[1], pos = button_pos, lineColor="black", fillColor = [0.5,0.5,0.5]),
+                       visual.TextStim(win, units = "pix", text = "Weiter", height = 20, color=(-1,-1,-1),bold=True, pos=button_pos)]
         self.mouse = mouse
         self.win = win
         for j, item in enumerate(itemtext):

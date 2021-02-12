@@ -7,6 +7,10 @@ Created on Thur Feb 11 14:04:23 2021
 
 from psychopy import visual, event, core, gui
 from collections import OrderedDict
+import pandas as pd
+
+from .multiplechoice import MultipleChoice
+from .likertskala import LikertSkala
 
 
 MOUSE_BUTTONS = {"left_click":[1,0,0],"right_click":[0,0,1],"wheel_click":[0,1,0]}
@@ -271,9 +275,79 @@ class MindWanderProbe(Trial):
                     
 class Questionnaire(Trial):
     """
+    TODO: free text input; make it a real class....
     A LikertSkala or MultipleChoice
     """
-    def __init__(self, fpath):
+    def __init__(self, name, fpath, kind, split=None, shuffle=False, button_pos=(400,-400)):
         super(Questionnaire,self).__init__()
         
+        self.name = name
+        self.fpath = fpath
+        assert kind in ["MC","LS"], "unknown questionnaire type, expected MC or LS"
+        self.kind = kind
+        self.split = split
+        self.shuffle = shuffle
+        self.button_pos = button_pos
         
+        self.df = self.read_excel()
+        self.shuffle_df()
+        self.df_list = self.split_pages()
+        self.quests = self.make_instances()
+        
+    def run(self):
+        for page in self.quests:
+            page.draw()
+        
+    def read_excel(self):
+        if self.fpath.endswith(".csv"):
+            df = pd.read_csv(self.fpath, sep=";")
+        elif self.fpath.endswith(".xlsx"):
+            df = pd.read_excel(self.fpath)
+        else:
+            raise Exception("no valid filetype - .csv or .xlsx expected")
+        return df
+    
+    def shuffle_df(self):
+        if self.shuffle:
+            self.df = self.df.sample(frac=1)
+            self.df = self.df.reset_index()
+    
+    def split_pages(self):
+        if self.split:
+            if type(self.split) == int:
+                last_item = self.split
+                df1 = self.df.loc[0:last_item,:]
+                df1 = df1.reset_index()
+                df2 = self.df.loc[last_item+1:,:]
+                df2 = df2.reset_index()
+                df_list = [df1,df2]
+            elif type(self.split) == list:
+                df_list = []
+                #n_splits = len(quest["split"])
+                df_tail = self.df
+                for split in self.split:
+                    df_head = df_tail[:split]
+                    df_list.append(df_head)
+                    df_tail = df_tail[split:]
+                df_list.append(df_tail)
+            else:
+                raise Exception("unknown splitting type - None, int or list expected")
+        else:
+            df_list = [self.df]
+        return df_list
+    
+    def make_instances(self):
+        
+        quests = []
+        #create instance for each page
+        if self.kind == "LS":
+            for df in self.df_list:
+                quests.append(
+                        LikertSkala(self.win, self.mouse, df ,self.button_pos))
+        elif self.kind == "MC":
+            for df in self.df_list:
+                quests.append(
+                        MultipleChoice(self.win, self.mouse, df,
+                                       [self.name], self.button_pos,
+                                       dist_param=90, startpos=(-300,400)))
+        return quests
